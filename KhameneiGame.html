@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Report: A Day in the Life of Ali Khamenei</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .hud-item {
+            transition: all 0.5s ease-in-out;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+        .card {
+            background-color: rgba(40, 40, 40, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .decision-btn {
+            transition: all 0.3s ease;
+            border: 1px solid #4a5568;
+        }
+        .decision-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border-color: #a0aec0;
+        }
+        .result-card, .decision-card {
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .intro-bg {
+            background: linear-gradient(rgba(10, 10, 10, 0.8), rgba(10, 10, 10, 0.9)), url('https://static.euronews.com/articles/stories/07/54/90/04/1440x810_cmsv2_1762e0a6-8748-5629-91ab-057b71987588-7549004.jpg') no-repeat center center;
+            background-size: cover;
+        }
+        .value-changed-up { animation: change-up 1s ease-out; }
+        .value-changed-down { animation: change-down 1s ease-out; }
+        @keyframes change-up {
+            0% { color: #e0e0e0; transform: scale(1); }
+            50% { color: #48bb78; transform: scale(1.2); }
+            100% { color: #e0e0e0; transform: scale(1); }
+        }
+        @keyframes change-down {
+            0% { color: #e0e0e0; transform: scale(1); }
+            50% { color: #f56565; transform: scale(1.2); }
+            100% { color: #e0e0e0; transform: scale(1); }
+        }
+        .crisis-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .external-link {
+            display: inline-block;
+            margin-top: 0.5rem;
+            margin-right: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: #384252;
+            color: #e0e0e0;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        .external-link:hover {
+            background-color: #4a5568;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <div id="game-container" class="w-full max-w-5xl mx-auto p-4">
+
+        <!-- 1. Intro Screen -->
+        <div id="intro-screen" class="text-center intro-bg rounded-lg p-8 shadow-2xl">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 text-white">A Day in the Life of Ali Khamenei</h1>
+            <p class="text-lg md:text-xl mb-8 text-gray-300">Today, you are the Supreme Leader. Make decisions for Iran's 10 major crises.</p>
+            <div class="space-y-4 md:space-y-0 md:space-x-4">
+                <button id="start-btn" class="bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform hover:scale-105">
+                    Start Game
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. Game Screen -->
+        <div id="game-screen" class="hidden">
+            <!-- HUD -->
+            <header id="hud" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
+                <div class="hud-item card p-3 rounded-lg"><div class="text-sm text-gray-400">Budget (Trillion Toman)</div><div id="budget-value" class="text-2xl font-bold">﷼ 0</div></div>
+                <div class="hud-item card p-3 rounded-lg"><div class="text-sm text-gray-400">Water Reserves (B m³)</div><div id="water-value" class="text-2xl font-bold">💧 0</div></div>
+                <div class="hud-item card p-3 rounded-lg"><div class="text-sm text-gray-400">Forex Reserves (B$)</div><div id="forex-value" class="text-2xl font-bold">💰 0</div></div>
+                <div class="hud-item card p-3 rounded-lg"><div class="text-sm text-gray-400">Corruption Index (/100)</div><div id="corruption-value" class="text-2xl font-bold">⚙️ 0</div></div>
+            </header>
+            <div class="w-full bg-gray-600 rounded-full h-2.5 mb-4">
+                 <div id="progress-bar" class="bg-yellow-400 h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+
+            <!-- Decision Area -->
+            <main id="decision-area"></main>
+        </div>
+
+        <!-- 3. End Screen -->
+        <div id="end-screen" class="hidden text-center card p-8 rounded-lg">
+             <h2 class="text-3xl font-bold mb-4">Assessing Your Leadership</h2>
+            <p id="final-message" class="text-lg mb-6 text-gray-300"></p>
+            <div class="bg-gray-700 p-4 rounded-lg mb-6">
+                <h3 class="text-xl font-bold mb-2">Your Final Leadership Score:</h3>
+                <div id="final-score" class="text-5xl font-bold text-yellow-400">0 / 100</div>
+            </div>
+            <p class="mb-8">This experience shows how high-level decisions, even with good intentions, can lead to disastrous outcomes due to flawed structures and systemic corruption.</p>
+            <div class="space-y-4">
+                <button onclick="window.location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg">Play Again</button>
+                <a href="#" class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-8 rounded-lg text-lg">Read The Full Report</a>
+            </div>
+        </div>
+    </div>
+
+<script>
+// --- DOM Element Definitions ---
+const introScreen = document.getElementById('intro-screen');
+const gameScreen = document.getElementById('game-screen');
+const endScreen = document.getElementById('end-screen');
+const startBtn = document.getElementById('start-btn');
+const decisionArea = document.getElementById('decision-area');
+const budgetValueEl = document.getElementById('budget-value');
+const waterValueEl = document.getElementById('water-value');
+const forexValueEl = document.getElementById('forex-value');
+const corruptionValueEl = document.getElementById('corruption-value');
+const finalMessageEl = document.getElementById('final-message');
+const finalScoreEl = document.getElementById('final-score');
+const progressBar = document.getElementById('progress-bar');
+
+// --- Initial Game State ---
+const initialGameState = { budget: 8000, water: 12, forex: 30, corruption: 85, stage: 0 };
+let gameState = {};
+
+// --- Decisions Data (10-Stage English Version) ---
+const decisionsData = [
+    {
+        crisis: "Water Crisis & Land Subsidence",
+        description: "Iran faces one of the world's most severe water crises. NASA's GRACE satellite data confirms massive depletion of groundwater aquifers. What is your decision?",
+        image_url: "https://upload.wikimedia.org/wikipedia/commons/a/a2/Lake_Urmia_2021.jpg",
+        choices: [
+            { text: "Order the construction of several new large dams", cost: 800, effects: { water: -2, forex: 0, corruption: 5 }, resultText: "Reckless dam construction is a primary cause of drying wetlands like Lake Urmia. A World Bank report emphasizes that focusing on demand management, not supply increase (dam building), is vital for Iran. These projects often become hubs of massive corruption for specific institutions.", links: [{ type: 'Report', url: 'https://www.worldbank.org/en/country/iran/publication/iran-economic-monitor-managing-the-economic-crisis-and-containing-the-covid-19-pandemic', text: 'Read: World Bank Report' }] },
+            { text: "Invest in modern irrigation", cost: 500, effects: { water: 1, forex: -5, corruption: -2 }, resultText: "This is a scientific solution, but reports indicate that structural barriers and a 'water mafia' prevent its full implementation. A large portion of the budget is embezzled through shell companies and never reaches real farmers.", links: [{ type: 'Report', url: 'https://www.atlanticcouncil.org/blogs/iransource/irans-water-crisis-a-web-of-state-and-society-failures/', text: 'Read: Atlantic Council Analysis' }] },
+            { text: "Ignore the crisis", cost: 0, effects: { water: -4, forex: 0, corruption: 2 }, resultText: "This is effectively the current policy. According to research in Nature, Tehran is sinking at 25cm per year, one of the highest rates globally. This inaction threatens critical infrastructure.", links: [{ type: 'Report', url: 'https://www.theguardian.com/world/2018/nov/29/tehran-is-sinking-at-an-alarming-rate-say-scientists', text: 'Read: The Guardian Report' }] }
+        ]
+    },
+    {
+        crisis: "Economic Crisis & Sanctions",
+        description: "Iran's economy is crippled by sanctions and internal mismanagement. The IMF continues to forecast high inflation. What is your solution?",
+        image_url: "https://english.alarabiya.net/s3/files/styles/large_16_9/public/2022/12/12/2855212_1670845348.jpg",
+        choices: [
+            { text: "Negotiate with the West to revive the JCPOA", cost: 100, effects: { water: 0, forex: 15, corruption: -5 }, resultText: "This could free up foreign currency reserves in the short term. However, Reuters reports that hardline institutions like the IRGC, who profit from the sanctions-induced black market, are major opponents of any stable agreement.", links: [{ type: 'Report', url: 'https://www.reuters.com/world/middle-east/irans-guards-expand-economic-empire-shadowy-network-2023-05-15/', text: 'Read: Reuters Report' }] },
+            { text: "Strengthen the 'Resistance Economy'", cost: 1200, effects: { water: 0, forex: -10, corruption: 8 }, resultText: "The 'Resistance Economy' has become a cover for corruption and imports by state-affiliated companies. Transparency International consistently ranks Iran among the most corrupt countries.", links: [{ type: 'Report', url: 'https://www.transparency.org/en/cpi/2023/index/irn', text: 'Read: Corruption Ranking' }] }
+        ]
+    },
+    {
+        crisis: "Nuclear Program & International Pressure",
+        description: "The IAEA's latest report expresses concern over Iran's lack of cooperation and the presence of high-enriched uranium particles. The risk of military conflict is rising. What do you do?",
+        image_url: "https://storage.googleapis.com/afs-prod/media/9f485750e30d4e999c6f2a8a5f32a762/3000.jpeg",
+        choices: [
+            { text: "Continue 60% enrichment and expel inspectors", cost: 600, effects: { water: 0, forex: -20, corruption: 4 }, resultText: "This decision pushes Iran towards complete isolation and triggers the 'snapback' of all UN sanctions. Analysts estimate the true cost of the nuclear program, including sanctions, has been hundreds of billions of dollars.", links: [{ type: 'Report', url: 'https://www.iaea.org/newscenter/focus/iran', text: 'Read: IAEA Reports' }] },
+            { text: "Halt high-level enrichment and cooperate fully", cost: 50, effects: { water: 0, forex: 5, corruption: -3 }, resultText: "A major step for de-escalation. However, hardliners in the power structure will view this as a strategic 'surrender' and will likely create regional crises to undermine any diplomatic progress.", links: [{ type: 'Report', url: 'https://www.crisisgroup.org/middle-east-north-africa/gulf-and-arabian-peninsula/iran/242-irans-power-struggle-and-nuclear-deal', text: 'Read: Crisis Group Analysis' }] }
+        ]
+    },
+    {
+        crisis: "Mandatory Hijab & Morality Police",
+        description: "After the 2022 nationwide protests, the push for mandatory hijab has intensified, causing daily confrontations. This policy has polarized society. What do you do?",
+        image_url: "https://www.amnesty.org/en/wp-content/uploads/2023/03/ASA1366182023ENGLISH.jpg",
+        choices: [
+            { text: "Intensify crackdowns, expand Morality Police powers", cost: 150, effects: { forex: -5, corruption: 5 }, resultText: "This decision leads to more protests, international condemnation, and new human rights sanctions. Society becomes more polarized, and the regime's social capital erodes severely.", links: [{ type: 'Report', url: 'https://www.hrw.org/middle-east/n-africa/iran', text: 'Read: Human Rights Watch Report' }] },
+            { text: "Abolish the Morality Police, make hijab optional", cost: 20, effects: { forex: 3, corruption: -5 }, resultText: "This move is welcomed by the international community and a large part of the public, but it enrages the regime's traditionalist base, who accuse you of 'retreating from revolutionary principles.' The risk of instability from hardliners increases.", links: [] }
+        ]
+    },
+    {
+        crisis: "Tensions with Neighboring Countries",
+        description: "Support for proxy groups in the region has strained relations with Arab neighbors and increased the risk of direct conflict. What is your strategy?",
+        image_url: "https://www.chathamhouse.org/sites/default/files/styles/hero_image_1800x1012/public/2022-12/20221205-iran-protests-saudi-arabia-comp.jpg?itok=y_Y_Y7_j",
+        choices: [
+            { text: "Increase financial and military support for proxies", cost: 700, effects: { forex: -8, corruption: 4 }, resultText: "This decision leads to escalating regional conflicts, more sanctions, and deeper isolation. The nation's budget is spent on costly proxy wars instead of domestic development.", links: [] },
+            { text: "Begin direct negotiations with Saudi Arabia", cost: 50, effects: { forex: 5, corruption: -3 }, resultText: "This has the potential to reduce tensions and foster economic cooperation, but the IRGC and hardline factions, whose interests lie in continued crisis, will undermine the process with sabotage and provocations.", links: [{ type: 'Report', url: 'https://www.chathamhouse.org/2024/02/saudi-arabia-and-iran-are-talking-not-yet-friends', text: 'Read: Chatham House Analysis' }] }
+        ]
+    },
+    {
+        crisis: "Ballistic Missile Program",
+        description: "The development of the ballistic missile program has raised international concern and has been used as a pretext for new sanctions. What is your decision?",
+        image_url: "https://csis-website-prod.s3.amazonaws.com/s3fs-public/publication/220817_Ghormach_3.jpg?WvC5UAF5w4wP9aVAPM4p2oY8a9W3bms1",
+        choices: [
+            { text: "Accelerate the program and unveil new missiles", cost: 900, effects: { forex: -10, corruption: 3 }, resultText: "This provocative act triggers new, targeted sanctions against missile industries and their supply chains, strengthening the global consensus against Iran.", links: [{ type: 'Report', url: 'https://missilethreat.csis.org/country/iran/', text: 'Read: CSIS Missile Defense Project' }] },
+            { text: "Announce a temporary moratorium on testing", cost: 0, effects: { forex: 2, corruption: -2 }, resultText: "This confidence-building measure is welcomed by some international actors, but domestic hardliners see it as a dangerous concession that weakens Iran's 'deterrent power.'", links: [] }
+        ]
+    },
+    {
+        crisis: "Severe Air Pollution",
+        description: "Air pollution in major cities has reached alarming levels, causing tens of thousands of deaths annually. The use of low-quality fuel oil in power plants and substandard gasoline are the main causes.",
+        image_url: "https://www.payvand.com/news/18/jan/Tehran-air-pollution-by-Amin-Nazari-10.jpg",
+        choices: [
+            { text: "Immediately import standard gasoline and gas", cost: 400, effects: { forex: -15, water: 0 }, resultText: "A very expensive short-term solution that severely depletes the country's foreign exchange reserves. The import process itself also becomes a hotbed for corruption and rent-seeking.", links: [] },
+            { text: "Invest in renewable energy", cost: 1000, effects: { forex: -5, corruption: -4 }, resultText: "The correct but slow solution. The results will only be seen years later, and powerful oil and gas lobbies will resist this transition.", links: [{ type: 'Report', url: 'https://www.who.int/data/gho/data/countries/country-details/GHO/iran-(islamic-republic-of)', text: 'Read: WHO Data for Iran' }] }
+        ]
+    },
+    {
+        crisis: "Major Embezzlement Scandal",
+        description: "A major embezzlement scandal has been exposed in one of the wealthy foundations under your control. Trillions of Tomans in public assets have disappeared, sparking public outrage.",
+        image_url: "https://www.radiofarda.com/img/proxy/3/13256/13256531.jpg",
+        choices: [
+            { text: "Order a decisive crackdown on the accused", cost: 10, effects: { corruption: -10, forex: 0 }, resultText: "A populist move that could slightly restore public trust, but it threatens the deep network of corruption in the system, creating powerful internal enemies who may retaliate.", links: [] },
+            { text: "Classify the case as a security matter, gag the media", cost: 0, effects: { corruption: 10, forex: -3 }, resultText: "This decision confirms the public perception of systemic corruption and impunity for the powerful. Distrust in society grows, leading to capital flight.", links: [{ type: 'Report', url: 'https://www.ganintegrity.com/portal/country-profiles/iran', text: 'Read: Iran Corruption Risk Profile' }] }
+        ]
+    },
+    {
+        crisis: "Brain Drain & Elite Migration",
+        description: "According to reports, Iran has one of the highest rates of brain drain in the world. Thousands of doctors, engineers, and entrepreneurs leave the country annually. What do you do?",
+        image_url: "https://iranprimer.usip.org/sites/default/files/styles/full/public/2020-09/20200902-Tehran-Mehrabad-Airport-AP.JPG?itok=zQ-41k5m",
+        choices: [
+            { text: "Create an open political and economic environment", cost: 300, effects: { corruption: -6, forex: 2 }, resultText: "A fundamental reform that could reverse the trend, but it challenges the regime's ideological foundations and faces strong opposition from security apparatuses.", links: [{ type: 'Report', url: 'https://www.al-monitor.com/originals/2022/10/irans-brain-drain-surges-amid-unrest-and-economic-woes', text: 'Read: Al-Monitor Report' }] },
+            { text: "Dismiss migration as unimportant, emphasize 'commitment'", cost: 0, effects: { corruption: 3, forex: -4 }, resultText: "This policy accelerates the brain drain, weakens the economy, and depletes critical sectors of expertise. The gap between Iran and the developed world widens.", links: [] }
+        ]
+    },
+    {
+        crisis: "Crackdown on Public Protests",
+        description: "Widespread protests over the economy and lack of freedoms have erupted across the country. Security forces are requesting special powers to control the situation.",
+        image_url: "https://www.amnesty.org/en/wp-content/uploads/2020/03/MDE1318942020ENGLISH.jpg",
+        choices: [
+            { text: "Order a full crackdown and internet shutdown", cost: 200, effects: { corruption: 7, forex: -25 }, resultText: "This decision leads to hundreds of deaths, mass arrests, and severe human rights sanctions from the US and Europe. The economic cost of the internet shutdown, according to NetBlocks, is billions of dollars, devastating foreign reserves.", links: [{ type: 'Report', url: 'https://www.amnesty.org/en/latest/news/2020/03/iran-details-of-304-deaths-in-protest-crackdown/', text: 'Read: Amnesty International Report' }] },
+            { text: "Initiate dialogue with protest representatives", cost: 50, effects: { corruption: -4, forex: 1 }, resultText: "This could temporarily calm the situation, but is seen as a sign of weakness by hardliners. There's a risk that making concessions could fuel greater demands for fundamental change.", links: [] }
+        ]
+    }
+];
+
+// --- Main Game Functions ---
+function startGame() {
+    gameState = JSON.parse(JSON.stringify(initialGameState));
+    introScreen.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+    endScreen.classList.add('hidden');
+    updateHUD();
+    renderDecision(gameState.stage);
+}
+
+function renderDecision(stageIndex) {
+    decisionArea.innerHTML = '';
+    if (stageIndex >= decisionsData.length || gameState.budget <= 0) {
+        endGame();
+        return;
+    }
+    
+    progressBar.style.width = `${((stageIndex) / decisionsData.length) * 100}%`;
+
+    const stageData = decisionsData[stageIndex];
+    const cardHTML = `
+        <div class="card p-6 rounded-lg shadow-xl decision-card">
+            <h2 class="text-2xl md:text-3xl font-bold mb-3 text-yellow-300">${stageIndex + 1}. ${stageData.crisis}</h2>
+            <img src="${stageData.image_url}" alt="${stageData.crisis}" class="crisis-image" onerror="this.onerror=null;this.src='https://placehold.co/800x400/333333/FFFFFF?text=Image+Not+Available';">
+            <p class="mb-4 text-gray-300">${stageData.description}</p>
+            <div id="choices-container" class="grid grid-cols-1 md:grid-cols-${stageData.choices.length} gap-4">
+                ${stageData.choices.map((choice, index) => `
+                    <button class="decision-btn w-full text-left p-4 rounded-lg bg-gray-700 hover:bg-gray-600 h-full flex flex-col justify-between" onclick="makeDecision(${index})">
+                        <p class="font-bold text-lg">${choice.text}</p>
+                        <p class="text-sm text-red-400 mt-2">Cost: ${choice.cost} Trillion Toman</p>
+                    </button>
+                `).join('')}
+            </div>
+        </div>`;
+    decisionArea.innerHTML = cardHTML;
+}
+
+function makeDecision(choiceIndex) {
+    const stageData = decisionsData[gameState.stage];
+    const choice = stageData.choices[choiceIndex];
+
+    if (gameState.budget < choice.cost) {
+        const tempAlert = document.createElement('div');
+        tempAlert.textContent = 'Not enough budget for this decision!';
+        tempAlert.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background-color:red; color:white; padding:10px 20px; border-radius:5px; z-index:1000;';
+        document.body.appendChild(tempAlert);
+        setTimeout(() => tempAlert.remove(), 3000);
+        return;
+    }
+
+    gameState.budget -= choice.cost;
+    gameState.water += choice.effects.water;
+    gameState.forex += choice.effects.forex;
+    gameState.corruption += choice.effects.corruption;
+    
+    if (gameState.corruption > 100) gameState.corruption = 100;
+    if (gameState.corruption < 0) gameState.corruption = 0;
+    if (gameState.water < 0) gameState.water = 0;
+    if (gameState.forex < 0) gameState.forex = 0;
+
+    updateHUD(choice.effects);
+    displayResult(choice);
+}
+
+function displayResult(choice) {
+    const linksHTML = choice.links.map(link => `
+        <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="external-link">
+            ${link.type === 'Video' ? '🎬' : '📄'} ${link.text}
+        </a>
+    `).join('');
+
+    decisionArea.innerHTML = `
+        <div class="result-card card col-span-full p-5 rounded-lg border-l-4 border-yellow-400">
+            <h3 class="font-bold text-xl mb-2">Outcome (Based on Reports):</h3>
+            <p class="text-gray-300 mb-4">${choice.resultText}</p>
+            ${linksHTML ? `<div><h4 class="font-bold text-md mt-4 mb-2">For More Information:</h4>${linksHTML}</div>` : ''}
+            <button id="next-stage-btn" class="mt-6 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-6 rounded-lg">
+                Next Decision &rarr;
+            </button>
+        </div>`;
+
+    document.getElementById('next-stage-btn').onclick = () => {
+        gameState.stage++;
+        renderDecision(gameState.stage);
+    };
+}
+
+function updateHUD(effects = {}) {
+    budgetValueEl.textContent = `﷼ ${Math.round(gameState.budget)}`;
+    waterValueEl.textContent = `💧 ${Math.round(gameState.water)}`;
+    forexValueEl.textContent = `💰 ${Math.round(gameState.forex)}`;
+    corruptionValueEl.textContent = `⚙️ ${Math.round(gameState.corruption)}`;
+    
+    const elements = { budget: budgetValueEl, water: waterValueEl, forex: forexValueEl, corruption: corruptionValueEl };
+    for (const key in effects) {
+        const element = elements[key];
+        if (!element) continue;
+        element.classList.remove('value-changed-up', 'value-changed-down');
+        void element.offsetWidth; 
+        if (effects[key] > 0) element.classList.add('value-changed-up');
+        else if (effects[key] < 0) element.classList.add('value-changed-down');
+    }
+}
+
+function endGame() {
+    progressBar.style.width = '100%';
+    gameScreen.classList.add('hidden');
+    endScreen.classList.remove('hidden');
+
+    const budgetScore = Math.max(0, (gameState.budget / initialGameState.budget) * 30);
+    const waterScore = Math.max(0, (gameState.water / initialGameState.water) * 25);
+    const forexScore = Math.max(0, (gameState.forex / initialGameState.forex) * 25);
+    const corruptionScore = Math.max(0, ((100 - gameState.corruption) / (100 - initialGameState.corruption)) * 20);
+    
+    let finalScore = Math.round(budgetScore + waterScore + forexScore + corruptionScore);
+    if (finalScore < 0) finalScore = 0;
+    if (finalScore > 100) finalScore = 100;
+
+    finalScoreEl.textContent = `${finalScore} / 100`;
+
+    let message = "";
+    if (gameState.budget <= 0) {
+         message = "You have bankrupted the country! The budget has run out, and it's no longer possible to govern.";
+    } else if (finalScore > 70) {
+        message = "You performed beyond expectations! Perhaps there is a glimmer of hope.";
+    } else if (finalScore > 40) {
+        message = "You tried to manage the crises, but the outcome shows the challenges are greater than individual decisions.";
+    } else {
+        message = "Unfortunately, your decisions have plunged the country into a deeper crisis.";
+    }
+    finalMessageEl.textContent = message;
+}
+
+// --- Event Listeners ---
+startBtn.addEventListener('click', startGame);
+
+</script>
+</body>
+</html>
